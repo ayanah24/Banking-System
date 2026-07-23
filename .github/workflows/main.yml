@@ -12,13 +12,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
-      - name: Show diff size
-       run: wc -l diff.txt && echo "---" && cat diff.txt
-  
+
       - name: Get PR diff
         run: |
-          git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} > diff.txt
+          git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} > diff.txt
+
+      - name: Show diff size
+        run: |
+          echo "Diff line count:"
+          wc -l diff.txt
+          echo "---- diff content ----"
+          cat diff.txt
 
       - name: Submit review
         id: submit
@@ -28,6 +32,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CODESENSE_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d "{\"diff\": $DIFF, \"repoName\": \"${{ github.repository }}\"}")
+          echo "Submit response: $RESPONSE"
           JOB_ID=$(echo "$RESPONSE" | jq -r '.jobId')
           echo "job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
 
